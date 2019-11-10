@@ -5,7 +5,7 @@ open FsBACnet
 
 [<EntryPoint>]
 let main argv =
-    let client = FsBACnet.getBACnetClient FsBACnet.BACnetType.BACnetIP argv.[0] 
+    let client = FsBACnet.getBACnetClient FsBACnet.BACnetType.BACnetIP "192.168.1.11" 
                  |> FsBACnet.attachOnIAmToClient BACnetDeviceStore.handlerOnIam 
     // build the dev store
     BACnetDeviceStore.buildDeviceStore client 10                           
