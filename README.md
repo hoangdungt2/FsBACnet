@@ -31,9 +31,9 @@ Similar to **DeviceStore**, **MailboxProcess** is used. This is to store all pre
 
 ## Examples
 ### Simple ReadWrite ``exampleWriteRead``
-1. Create a *BACnetClient* and discover the network in 10s
+1. Create a BACnet/IP *BACnetClient* at ip address *192.168.1.11* and discover the network in 10s
 ```fsharp
-    let client = FsBACnet.getBACnetClient FsBACnet.BACnetType.BACnetIP argv.[0] 
+    let client = FsBACnet.getBACnetClient FsBACnet.BACnetType.BACnetIP "192.168.1.11" 
                  |> FsBACnet.attachOnIAmToClient BACnetDeviceStore.handlerOnIam 
     BACnetDeviceStore.buildDeviceStore client 10      
 ```    
