@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BACnet.Core" Version="1.0.30" />
+    <PackageReference Include="BACnet" Version="1.0.13" />
   </ItemGroup>
 
 </Project>
