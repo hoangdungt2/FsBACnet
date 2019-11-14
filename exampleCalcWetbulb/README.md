@@ -47,3 +47,20 @@ while true do
     // sleep 
     samplingTime * 1000 |> Async.Sleep |> Async.RunSynchronously
 ```
+
+### Result
+Result should look something like this
+
+    [buildDeviceStore]: build Device Store in 10 seconds
+    [handlerOnIam]: adding 105021 to Device Store
+    [handlerOnIam]: adding 105011 to Device Store
+    [handlerOnIam]: adding 105123 to Device Store
+    [handlerOnIam]: adding 126291 to Device Store
+    drybulb = 28.10, rh = 84.8 -> wb = 26.02
+    Write 26.02 to `105123 AV-28` ... true
+    drybulb = 28.10, rh = 84.9 -> wb = 26.04
+    Write 26.04 to `105123 AV-28` ... true
+    drybulb = 28.10, rh = 84.9 -> wb = 26.04
+    Write 26.04 to `105123 AV-28` ... true
+    drybulb = 28.10, rh = 84.8 -> wb = 26.02
+    Write 26.02 to `105123 AV-28` ... true
