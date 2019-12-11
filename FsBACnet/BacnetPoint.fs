@@ -1,6 +1,10 @@
 namespace FsBACnet
 open System.IO.BACnet
 open System.Text.RegularExpressions
+open System
+open ExcelDataReader
+open Deedle
+open System.IO
 
 type ReadResult<'a> = 'a option
 type BACnetPoint =
@@ -9,7 +13,9 @@ type BACnetPoint =
         BacnetObj    : BacnetObjectId; // be parsed from string        
         DeviceAdr    : BacnetAddress;  // be parsed from string
         Value        : ReadResult<float>; // read from obj and adr
+        Name         : string; // for alias name for the point
     }
+        
 ///
 /// - BACnetPoint module
 /// 
@@ -43,12 +49,19 @@ module BACnetPoint =
 
     let private helperFormalizePointString (dev:uint32) (bobj:BacnetObjectId) = 
         sprintf "%d %s-%d" dev (helperObjTypeToString bobj) (bobj.instance)
+    let private readExcelToFrame (fn:string) = 
+        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance)
+        use stream1  = IO.File.Open(fn, FileMode.Open, FileAccess.Read)
+        use reader = ExcelReaderFactory.CreateReader(stream1)
+        let result = reader.AsDataSet(ExcelDataSetConfiguration( ConfigureDataTable = fun (_:IExcelDataReader) -> ExcelDataTableConfiguration( UseHeaderRow = true) ))
+        result.Tables.[0].CreateDataReader() |> Frame.ReadReader// can use the sheet name here such as result.Tables.[sheetName]
 
     let normalizePointString (pointStr:string) = 
         let point = Regex(@"([a-z]{2}\-|[a-z]{2})[0-9]{1,4}", RegexOptions.IgnoreCase).Match(pointStr).Value |> getBacnetObjectId
         let device = helperGetDevFromString pointStr
         helperFormalizePointString device point
-    let parsePointString (pointStr:string) = 
+    
+    let private parsePointStringWithName (pointName:string) (pointStr:string) = 
         let point = Regex(@"([a-z]{2}\-|[a-z]{2})[0-9]{1,4}", RegexOptions.IgnoreCase).Match(pointStr).Value |> getBacnetObjectId
         let device = helperGetDevFromString pointStr
         let bacAddr = 
@@ -59,8 +72,27 @@ module BACnetPoint =
             PointString = helperFormalizePointString device point
             BacnetObj   = point
             DeviceAdr   = bacAddr
-            Value       = None 
+            Value       = None
+            Name        = pointName
         }
+    
+    let parsePointString (pointStr:string) = 
+        parsePointStringWithName "" pointStr
+
+    let parsePointsFromExcel (excelFn:string) = 
+        let printValues (s:Series<string,obj>) = 
+            let name = Series.get "Name" s |> string 
+            let dev  = Series.get "Device-instance" s |> string 
+            let pointType = Series.get "Analog" s |> string
+            let pointNum  = Series.get "Object" s |> string
+            name,
+            sprintf "Dev %s, %s-%s" dev (pointType.ToUpper()) pointNum
+        let pointList = excelFn |> readExcelToFrame |> Frame.mapRowValues printValues
+                        |> Series.values
+        pointList
+        |> List.ofSeq
+        |> List.map (fun (n,ps) -> parsePointStringWithName n ps)                        
+
     let private formBACnetPointVal (x:BACnetPoint) (value:float) = 
         {x with Value = value |> Some}
     let readValueAsync (client:BacnetClient) (point:BACnetPoint) =         
@@ -74,13 +106,9 @@ module BACnetPoint =
                         |> formBACnetPointVal point
             with _ -> return {point with Value = None}
         }
-    
     let readValue (client:BacnetClient) (point:BACnetPoint) = 
         readValueAsync client point 
         |> Async.RunSynchronously
-
-
-
     let writePointAsync (client:BacnetClient) (point:BACnetPoint) (value:float32) = 
         async{
             let bacnetValue = 

@@ -37,6 +37,7 @@ let main argv =
     // Discover the network in 10s
     BACnetDeviceStore.buildDeviceStore client 10                           
 
+    // Build BACnetPointStore
     [
         dbStr
         rhStr
@@ -44,7 +45,7 @@ let main argv =
     ]
     |> List.iter ( BACnetPoint.parsePointString >> BACnetPointStore.putPoint )
 
-    // loop forever to keeping on updating wetbulb
+    // loop forever to keep on updating wetbulb
     while true do
         // update value of all BACnetPoints in BACnetPointStore
         BACnetPointStore.updateValues client

@@ -13,6 +13,10 @@
 
   <ItemGroup>
     <PackageReference Include="BACnet" Version="1.0.13" />
+    <PackageReference Include="Deedle" Version="2.1.0" />
+    <PackageReference Include="ExcelDataReader" Version="3.6.0" />
+    <PackageReference Include="ExcelDataReader.Dataset" Version="3.6.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="4.6.0" />
   </ItemGroup>
 
 </Project>

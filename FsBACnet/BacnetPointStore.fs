@@ -10,6 +10,8 @@ module BACnetPointStore =
     | GetAll of AsyncReplyChannel<List<BACnetPoint>>
     | IsExist of string*AsyncReplyChannel<bool>
     | TryFind of string*AsyncReplyChannel<BACnetPoint option>
+    | TryFindByName of string*AsyncReplyChannel<BACnetPoint option>
+
     let private helperCheckPointExist (pointList:BACnetPoint list) (pointString:string) = 
         List.exists (fun x-> x.PointString.ToLower()=pointString.ToLower()) pointList
     type private BacnetPointMailbox() = 
@@ -22,7 +24,8 @@ module BACnetPointStore =
                                    | GetAll reply -> reply.Reply(state); state
                                    | IsExist (pointString,reply) -> helperCheckPointExist state pointString |> reply.Reply ; state
                                    | TryFind (pointString,reply) -> List.tryFind (fun x-> x.PointString.ToLower()=pointString.ToLower()) state |> reply.Reply ; state
-                                   | UpdateValue client -> state |> List.map (BACnetPoint.readValue client)
+                                   | TryFindByName (pointName,reply) -> List.tryFind (fun x-> x.Name.ToLower()=pointName.ToLower()) state |> reply.Reply ; state
+                                   | UpdateValue client -> state |> List.map (BACnetPoint.readValueAsync client) |> Async.Parallel |> Async.RunSynchronously |> Array.toList
                     return! handlerMsg newState                                              
                 }
             handlerMsg List.empty
@@ -33,14 +36,18 @@ module BACnetPointStore =
             agent.PostAndReply(GetAll)
         static member IsExist (name:string) = 
             agent.PostAndReply (fun reply -> IsExist(name,reply))      
-        static member TryFind (name:string) = 
-            agent.PostAndReply (fun reply -> TryFind(name,reply))      
+        static member TryFind (pointString:string) = 
+            agent.PostAndReply (fun reply -> TryFind(pointString,reply))      
+        static member TryFindByName (pointName:string) = 
+            agent.PostAndReply (fun reply -> TryFind(pointName,reply))      
         static member UpdateValue (client:BacnetClient) = 
             agent.Post (UpdateValue client)            
     let getPoint (pointString:string) = 
         pointString
         |> BACnetPoint.normalizePointString
         |> BacnetPointMailbox.TryFind
+    let getPointByName (pointName:string) = 
+        BacnetPointMailbox.TryFindByName pointName
     let getPoints = 
         BacnetPointMailbox.GetAll
     let putPoint (point:BACnetPoint) = 
