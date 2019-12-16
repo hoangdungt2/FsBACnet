@@ -32,10 +32,10 @@ let main argv =
     
     // Create BACnetClient using command line argument 
     let client = FsBACnet.getBACnetClient FsBACnet.BACnetType.BACnetIP argv.[0]
-                 |> FsBACnet.attachOnIAmToClient BACnetDeviceStore.handlerOnIam 
+                 |> FsBACnet.attachOnIAmToClient BACnetDeviceStoreStatic.handlerOnIam 
     
     // Discover the network in 10s
-    BACnetDeviceStore.buildDeviceStore client 10                           
+    BACnetDeviceStoreStatic.buildDeviceStore client 10                           
 
     // Build BACnetPointStore
     [
@@ -43,17 +43,17 @@ let main argv =
         rhStr
         wbStr
     ]
-    |> List.iter ( BACnetPoint.parsePointString >> BACnetPointStore.putPoint )
+    |> List.iter ( BACnetPoint.parsePointStringStaticDevStore >> BACnetPointStoreStatic.putPoint )
 
     // loop forever to keep on updating wetbulb
     while true do
         // update value of all BACnetPoints in BACnetPointStore
-        BACnetPointStore.updateValues client
+        BACnetPointStoreStatic.updateValues client
                
         // read rh and drybulb then calculate wetbulb
-        let drybulb = BACnetPointStore.getPoint dbStr |> Option.get |> getPresentValue
-        let rh      = BACnetPointStore.getPoint rhStr |> Option.get |> getPresentValue
-        let wbPoint = BACnetPointStore.getPoint wbStr |> Option.get
+        let drybulb = BACnetPointStoreStatic.getPoint dbStr |> Option.get |> getPresentValue
+        let rh      = BACnetPointStoreStatic.getPoint rhStr |> Option.get |> getPresentValue
+        let wbPoint = BACnetPointStoreStatic.getPoint wbStr |> Option.get
         
         // calculate wb
         let wb = x rh drybulb |> calcWb

@@ -60,11 +60,11 @@ module BACnetPoint =
         let device = helperGetDevFromString pointStr
         helperFormalizePointString device point
 
-    let parsePointStringWithName (pointName:string) (pointStr:string) =
+    let parsePointStringNameStaticDevStore (pointName:string) (pointStr:string) =
         let point = Regex(@"([a-z]{2}\-|[a-z]{2})[0-9]{1,4}", RegexOptions.IgnoreCase).Match(pointStr).Value |> getBacnetObjectId
         let device = helperGetDevFromString pointStr
         let bacAddr =
-            match device.ToString() |> BACnetDeviceStore.getDevice with
+            match device.ToString() |> BACnetDeviceStoreStatic.getDevice with
             | Some x -> x
             | _ -> failwith (sprintf "Device `%d` is not online" device)
         {
@@ -75,7 +75,7 @@ module BACnetPoint =
             Name        = pointName
         }
     
-    let parsePointStringWithNameDevStore (devstore: BACnetDeviceStoreInstance.BacnetDeviceStoreInstance) (pointName:string) (pointStr:string) = 
+    let parsePointStringWithNameDevStore (devstore: BACnetDeviceStore.BacnetDeviceStoreInstance) (pointName:string) (pointStr:string) = 
         let point = Regex(@"([a-z]{2}\-|[a-z]{2})[0-9]{1,4}", RegexOptions.IgnoreCase).Match(pointStr).Value |> getBacnetObjectId
         let device = helperGetDevFromString pointStr
         let bacAddr =
@@ -90,8 +90,8 @@ module BACnetPoint =
             Name        = pointName
         }
 
-    let parsePointString (pointStr:string) =
-        parsePointStringWithName "" pointStr
+    let parsePointStringStaticDevStore (pointStr:string) =
+        parsePointStringNameStaticDevStore "" pointStr
 
     let parsePointsFromExcel (excelFn:string) =
         let printValues (s:Series<string,obj>) =
@@ -105,7 +105,7 @@ module BACnetPoint =
                         |> Series.values
         pointList
         |> List.ofSeq
-        |> List.map (fun (n,ps) -> parsePointStringWithName n ps)
+        |> List.map (fun (n,ps) -> parsePointStringNameStaticDevStore n ps)
 
     let private formBACnetPointVal (x:BACnetPoint) (value:float) =
         {x with Value = value |> Some}

@@ -15,19 +15,19 @@ let main argv =
 
     // Create BACnetClient using command line argument 
     let client = FsBACnet.getBACnetClient FsBACnet.BACnetType.BACnetIP "192.168.222.181"
-                 |> FsBACnet.attachOnIAmToClient BACnetDeviceStore.handlerOnIam 
+                 |> FsBACnet.attachOnIAmToClient BACnetDeviceStoreStatic.handlerOnIam 
     // Discover the network in 10s
-    BACnetDeviceStore.buildDeviceStore client 10                           
+    BACnetDeviceStoreStatic.buildDeviceStore client 10                           
 
 
     BACnetPoint.parsePointsFromExcel exFn
-    |> BACnetPointStore.putPoints
+    |> BACnetPointStoreStatic.putPoints
 
     // update values in BACnetPointStore
-    BACnetPointStore.updateValues client
+    BACnetPointStoreStatic.updateValues client
 
     // display all points
-    BACnetPointStore.getPoints()
+    BACnetPointStoreStatic.getPoints()
     |> List.iter (fun p -> printfn "[%s][%s] = %A" p.Name p.PointString p.Value)
 
     printfn ""
