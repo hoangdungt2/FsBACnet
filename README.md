@@ -13,15 +13,17 @@ type ReadResult<'a> = 'a option
 type BACnetPoint =
     {
         PointString  : string; // "105123 AV123"for AV point 123 at device 105123
-        BacnetObj    : BacnetObjectId; // be parsed from string        
+        BacnetObj    : BacnetObjectId; // be parsed from string
         DeviceAdr    : BacnetAddress;  // be parsed from string
         Value        : ReadResult<float>; // read from obj and adr
+        Name         : string; // for alias name for the point
     }
 ```
 To parse a string, e.g. "105123 AV-123" to ``BACnetPoint``, ``BACnetPoint.parsePointString`` can be used
 ```fsharp
 BACnetPoint.parssePointString "105123 av-123"
 ```
+This will create a ``BACnetPoint`` without ``Name`` field is "".
 
 ## Device Store ``fsBacnet/BACnetDeviceStore.fs``
 At startup, all the devices will need to be discovered, **Device Store** is used to stored all the **Device ID** and their addresses. In this repo, **MailboxProcessor** is used for this purpose.
@@ -35,23 +37,23 @@ Similar to **DeviceStore**, **MailboxProcess** is used. This is to store all pre
 ```fsharp
     let client = FsBACnet.getBACnetClient FsBACnet.BACnetType.BACnetIP "192.168.1.11" 
                  |> FsBACnet.attachOnIAmToClient BACnetDeviceStore.handlerOnIam 
-    BACnetDeviceStore.buildDeviceStore client 10      
+    BACnetDeviceStoreStatic.buildDeviceStore client 10      
 ```    
 2. Parse **BACnetPoint** from string and read their values
 ```fsharp
     ["14 av-0";"dev 14 av-2";"dev 14, bv0"]
-    |> List.map (BACnetPoint.parsePointString >> (fun x -> BACnetPointStore.putPoint x; BACnetPoint.readValue client x))
+    |> List.map (BACnetPoint.parsePointStringStaticDevStore >> (fun x -> BACnetPointStoreStatic.putPoint x; BACnetPoint.readValue client x))
     |> List.iter (fun x -> printfn "`%s` value = %A" x.PointString x.Value)
 ```
 3. Write random number to "Dev 14, av-2" and read all back
 ```fsharp
     let rnd = Random()
-    BACnetPointStore.getPoint "14, av-2" 
+    BACnetPointStoreStatic.getPoint "14, av-2" 
     |> Option.get
     |> (fun p -> BACnetPoint.writeDisplayResult client p (rnd.NextDouble() |> float32))
     |> Async.RunSynchronously
     Async.Sleep 1000 |> Async.RunSynchronously
-    BACnetPointStore.updateValues client
-    BACnetPointStore.getPoints()
+    BACnetPointStoreStatic.updateValues client
+    BACnetPointStoreStatic.getPoints()
     |> List.iter (fun x -> printfn "`%s` value = %A" x.PointString x.Value)
 ```
