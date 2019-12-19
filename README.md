@@ -23,7 +23,7 @@ To parse a string, e.g. "105123 AV-123" to ``BACnetPoint``, ``BACnetPoint.parseP
 ```fsharp
 BACnetPoint.parssePointString "105123 av-123"
 ```
-This will create a ``BACnetPoint`` without ``Name`` field is "".
+This will create a ``BACnetPoint`` with ``Name`` field is "".
 
 ## Device Store ``fsBacnet/BACnetDeviceStore.fs``
 At startup, all the devices will need to be discovered, **Device Store** is used to stored all the **Device ID** and their addresses. In this repo, **MailboxProcessor** is used for this purpose.
