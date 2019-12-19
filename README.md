@@ -28,7 +28,7 @@ This will create a ``BACnetPoint`` with ``Name`` field is "".
 ## Device Store ``fsBacnet/BACnetDeviceStore.fs``
 At startup, all the devices will need to be discovered, **Device Store** is used to stored all the **Device ID** and their addresses. In this repo, **MailboxProcessor** is used for this purpose.
 
-## BACnetPoint Store ``fsBacnet/BAC``
+## BACnetPoint Store ``fsBacnet/BACnetPointStore.fs``
 Similar to **DeviceStore**, **MailboxProcess** is used. This is to store all pre-defined BACnetPoint.
 
 ## Examples
