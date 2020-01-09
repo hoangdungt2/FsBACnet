@@ -4,11 +4,13 @@ open System.IO.BACnet
 module BACnetPointStoreHelpers =
     let helperCheckPointExist (pointList:BACnetPoint list) (pointString:string) =
         List.exists (fun x-> x.PointString.ToLower()=pointString.ToLower()) pointList
-
+    //let helperGetPointsNoneValue (pointList:BACnetPoint list) =
+    //    List
 module BACnetPointStore =
     type private MsgBacnetPoint =
     | Put of BACnetPoint
     | UpdateValue of BacnetClient
+    | UpdateOnlyNoneValue of BacnetClient
     | GetAll of AsyncReplyChannel<List<BACnetPoint>>
     | IsExist of string*AsyncReplyChannel<bool>
     | TryFind of string*AsyncReplyChannel<BACnetPoint option>
@@ -21,9 +23,13 @@ module BACnetPointStore =
             putPoint : BACnetPoint -> unit
             putPoints : BACnetPoint list -> unit
             updateValues : unit -> unit
+            updateNoneValues : unit -> unit
             isExist: string -> bool
             writeValueAsync : string -> float -> Async<bool>
         }
+    
+
+
     let initilize (client:BacnetClient) =
         let agent = MailboxProcessor.Start( fun (inbox:MailboxProcessor<MsgBacnetPoint>) ->
             let rec handlerMsg (state:List<BACnetPoint>) =
@@ -53,6 +59,10 @@ module BACnetPointStore =
                                         state
                                         |> List.map (BACnetPoint.readValueAsync client)
                                         |> Async.Parallel |> Async.RunSynchronously |> Array.toList
+                                   | UpdateOnlyNoneValue client ->
+                                        state
+                                        |> List.map (BACnetPoint.readIfNoneAsync client)
+                                        |> Async.Parallel |> Async.RunSynchronously |> Array.toList
                     return! handlerMsg newState
                 }
             handlerMsg List.empty
@@ -67,6 +77,8 @@ module BACnetPointStore =
             agent.PostAndReply (fun reply -> TryFindByName(pointName,reply))
         let updateValue () =
             agent.Post (UpdateValue client)
+        let updateNoneValue () =
+            agent.Post (UpdateOnlyNoneValue client)
         let writeValueAsync pointName (value:float) = 
             tryFindByName pointName
             |> function
@@ -80,6 +92,7 @@ module BACnetPointStore =
             putPoint = put
             putPoints = (fun points -> List.iter put points)
             updateValues = updateValue
+            updateNoneValues = updateNoneValue
             isExist = fun name -> agent.PostAndReply (fun reply -> IsExist(name,reply))
             writeValueAsync = writeValueAsync
         }

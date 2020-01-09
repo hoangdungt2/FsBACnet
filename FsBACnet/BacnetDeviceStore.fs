@@ -1,8 +1,37 @@
 namespace FsBACnet
 open System.IO.BACnet
+open Newtonsoft.Json
+open System
 
+type FsBacnetAddress = 
+    {
+        net          : uint16;
+        adr          : byte [];
+        VMac         : byte [];
+        ``type``     : BacnetAddressTypes;
+        RoutedSource : FsBacnetAddress option;
+    }
+type FsBacnetDevice = 
+    {
+        DeviceID  : uint32;
+        DeviceAdr : FsBacnetAddress;           
+    }
 
 module BACnetDeviceStore = 
+    let rec convertFsAdr2BacnetAddr (adr:FsBacnetAddress) = 
+        let tmp = BacnetAddress( BacnetAddressTypes.IP, uint16 0, [|10uy|] )
+        tmp.adr <- adr.adr
+        tmp.net <- adr.net
+        tmp.VMac <- adr.VMac
+        tmp.``type`` <- adr.``type``
+        tmp.RoutedSource <- BacnetAddress( BacnetAddressTypes.IP, uint16 0, [|10uy|] ) // need to initialized first
+        match adr.RoutedSource with
+        | None -> tmp.RoutedSource <- null
+        | Some rAdr -> tmp.RoutedSource <- convertFsAdr2BacnetAddr rAdr
+        tmp  
+    let private getDevListsFromJson (file:string) = 
+        JsonConvert.DeserializeObject<FsBacnetDevice list>( IO.File.ReadAllText(file) )
+        
     type private MsgStringBacnet = 
     | Put of string*BacnetAddress
     | GetAll of AsyncReplyChannel<Map<string,BacnetAddress>>
@@ -15,6 +44,7 @@ module BACnetDeviceStore =
             getDevice : string -> BacnetAddress option
             getDevices : unit -> Map<string,BacnetAddress>
             isDeviceExist: string -> bool
+            loadDevicesFromFile : string -> unit
         }
     let initialize (client:BacnetClient) = 
         let agent = MailboxProcessor.Start(fun (inbox:MailboxProcessor<MsgStringBacnet>) -> 
@@ -53,12 +83,16 @@ module BACnetDeviceStore =
             client.Start()
             client.WhoIs()
             timeToBuildInSecond * 1000 |> Async.Sleep |> Async.RunSynchronously
+        let loadDevicesFromFile (file:string) = 
+            JsonConvert.DeserializeObject<FsBacnetDevice list>( IO.File.ReadAllText(file) )
+            |> List.iter (fun dev -> putDevice (dev.DeviceID.ToString()) (dev.DeviceAdr|>convertFsAdr2BacnetAddr) ) 
         {
             buildDeviceStore = buildDeviceStore
             putDevice = putDevice
             getDevice = fun name -> agent.PostAndReply (fun reply -> Get(name,reply))
             getDevices = fun () -> agent.PostAndReply(GetAll)
             isDeviceExist = isDeviceExist
+            loadDevicesFromFile = loadDevicesFromFile
         }
 
 module BACnetDeviceStoreStatic = 
